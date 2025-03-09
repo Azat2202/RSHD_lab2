@@ -276,7 +276,7 @@ archive_command = 'cp %p $HOME/zkw63/%f'
 - Формат лог-файлов: .csv
 
 ```conf
-log_destination = 'stderr', 'csvlog'
+log_destination = 'csvlog'
 ```
 #quote(attribution: [Документация])[В качестве значения log_destination указывается один или несколько методов
 протоколирования, разделённых запятыми. По умолчанию используется stderr. Если в log_destination включено значение
@@ -291,7 +291,7 @@ logging_collector = on
 динамического связывания, другой пример — ошибки в скриптах типа archive_command.)]
 
 ```conf
-log_filename = 'postgresql-%Y-%m-%d\_%H%M%S.csv'
+log_filename = 'postgresql-%Y-%m-%d_%H%M%S.csv'
 ```
 #quote(attribution: [Документация])[При включённом logging_collector задаёт имена журнальных файлов. Значение по
 умолчанию postgresql-%Y-%m-%d\_%H%M%S.log. Если в log_destination включён вывод в формате CSV, то к имени журнального
@@ -315,3 +315,87 @@ log_duration = on
 ```
 
 Включаем протоколирование завершения сеанса и продолжительность каждой завершённой команды.
+
+== Этап 3. Дополнительные табличные пространства и наполнение базы
+
+- Создать новые табличные пространства для временных объектов: \$HOME/cje38, \$HOME/qdx64
+```sh
+mkdir -p $HOME/cje38
+mkdir -p $HOME/qdx64
+
+psql -h localhost -p 9455 -U postgres0 -d postgres
+```
+```sql
+CREATE TABLESPACE cje38 LOCATION '/var/db/postgres0/cje38';
+CREATE TABLESPACE qdx64 LOCATION '/var/db/postgres0/qdx64';
+```
+#image("imgs/img.png")
+- На основе template0 создать новую базу: leftbrownmom
+
+```sql
+CREATE DATABASE leftbrownmom WITH TEMPLATE=template0;
+```
+#image("imgs/img_1.png")
+
+- Создать новую роль, предоставить необходимые права, разрешить подключение к базе.
+```sql
+CREATE ROLE new_user WITH LOGIN PASSWORD 'password123!';
+GRANT CONNECT ON DATABASE leftbrownmom TO new_user;
+```
+
+- От имени новой роли (не администратора) произвести наполнение ВСЕХ созданных баз тестовыми наборами данных. ВСЕ т
+абличные пространства должны использоваться по назначению.
+Созданная роль без выданных прав:
+#image("imgs/img_2.png")
+
+```sh
+psql -h localhost -p 9455 -U postgres0 -d leftbrownmom
+```
+```sql
+GRANT ALL PRIVILEGES ON SCHEMA public TO new_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO new_user;
+GRANT CREATE ON TABLESPACE cje38, qdx64 TO new_user;
+```
+```sh
+psql -h localhost -p 9455 -U new_user -d leftbrownmom
+```
+
+Срипт наполнения данными:
+```sql
+CREATE TABLE test_table1 (
+    id SERIAL PRIMARY KEY,
+    data TEXT
+) TABLESPACE cje38;
+
+CREATE TABLE test_table2 (
+    id SERIAL PRIMARY KEY,
+    data TEXT
+) TABLESPACE qdx64;
+
+INSERT INTO test_table1 (data) VALUES ('Test data 1'), ('Test data 2');
+INSERT INTO test_table2 (data) VALUES ('Test data 3'), ('Test data 4');
+```
+- Вывести список всех табличных пространств кластера и содержащиеся в них объекты
+Список табличных простарнств:
+```sql
+SELECT spcname AS tablespace_name, pg_tablespace_location(oid) AS location
+FROM pg_tablespace;
+```
+#image("imgs/img_3.png")
+
+```sql
+SELECT relname AS table_name, spcname AS tablespace_name
+FROM pg_class
+JOIN pg_tablespace ON pg_class.reltablespace = pg_tablespace.oid
+WHERE relkind = 'r';
+```
+Только таблицы:
+#image("imgs/img_4.png")
+
+Все объекты:
+#image("imgs/img_5.png")
+
+== Вывод
+В ходе выполнения лабораторной работы был создан и сконфигурирован кластер БД на выделенном узле, мы познакомились с
+различными вариантами конфигурации. Также была создана БД, новая роль, табличные пространства и заполнение тестовыми
+данными.
