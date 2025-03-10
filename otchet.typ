@@ -374,7 +374,38 @@ CREATE TABLE test_table2 (
 
 INSERT INTO test_table1 (data) VALUES ('Test data 1'), ('Test data 2');
 INSERT INTO test_table2 (data) VALUES ('Test data 3'), ('Test data 4');
+
+CREATE TEMP TABLE test_temp_table1 (
+                             id SERIAL PRIMARY KEY,
+                             data TEXT
+) TABLESPACE cje38;
+
+CREATE TEMP TABLE test_temp_table2 (
+                             id SERIAL PRIMARY KEY,
+                             data TEXT
+) TABLESPACE qdx64;
+
+INSERT INTO test_temp_table1 (data) VALUES ('Test data 1'), ('Test data 2');
+INSERT INTO test_temp_table2 (data) VALUES ('Test data 3'), ('Test data 4');
 ```
+Расположение таблиц по схемам:
+```sql
+SELECT
+    n.nspname AS schema_name,
+    c.relname AS table_name
+FROM
+    pg_class c
+JOIN
+    pg_namespace n ON c.relnamespace = n.oid
+WHERE
+    c.relkind = 'r'
+    AND n.nspname != 'pg_catalog'
+    AND n.nspname != 'information_schema'
+ORDER BY
+    schema_name, table_name;
+```
+#image("imgs/img_6.png")
+
 - Вывести список всех табличных пространств кластера и содержащиеся в них объекты
 Список табличных простарнств:
 ```sql
@@ -390,10 +421,11 @@ JOIN pg_tablespace ON pg_class.reltablespace = pg_tablespace.oid
 WHERE relkind = 'r';
 ```
 Только таблицы:
-#image("imgs/img_4.png")
+#image("imgs/img_7.png")
 
 Все объекты:
-#image("imgs/img_5.png")
+#image("imgs/img_4.png")
+#image("imgs/img_8.png")
 
 == Вывод
 В ходе выполнения лабораторной работы был создан и сконфигурирован кластер БД на выделенном узле, мы познакомились с
