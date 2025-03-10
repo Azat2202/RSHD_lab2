@@ -291,7 +291,7 @@ logging_collector = on
 динамического связывания, другой пример — ошибки в скриптах типа archive_command.)]
 
 ```conf
-log_filename = 'postgresql-%Y-%m-%d_%H%M%S.csv'
+log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
 ```
 #quote(attribution: [Документация])[При включённом logging_collector задаёт имена журнальных файлов. Значение по
 умолчанию postgresql-%Y-%m-%d\_%H%M%S.log. Если в log_destination включён вывод в формате CSV, то к имени журнального
