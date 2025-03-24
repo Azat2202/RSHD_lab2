@@ -146,9 +146,7 @@ pg_ctl -D /var/db/postgres0/u08/djs10 -l logfile start
 # "local" is for Unix domain socket connections only
 local   all             all                                     peer
 # IPv4 local connections:
-host    all             all             127.0.0.1/32            password
-# IPv6 local connections:
-host    all             all             ::1/128                 password
+host    all             all             0.0.0.0/0            password
 ```
 
 === Конфигурация posrgresql.conf
@@ -427,6 +425,23 @@ WHERE relkind = 'r';
 #image("imgs/img_4.png")
 #image("imgs/img_8.png")
 
+```sql
+WITH space AS (
+SELECT
+    COALESCE(t.spcname, 'pg_default') AS spcname,
+    c.relname,
+    ROW_NUMBER() OVER (PARTITION BY COALESCE(t.spcname, 'pg_default') ORDER BY c.relname) AS rn
+  FROM pg_tablespace t
+  FULL JOIN pg_class c ON c.reltablespace = t.oid
+  ORDER BY spcname, c.relname
+)
+SELECT
+  CASE WHEN rn = 1 THEN spcname ELSE NULL END AS spcname,
+  relname
+FROM space;
+```
+#image("imgs/img_10.png")
+#image("imgs/img_11.png")
 == Вывод
 В ходе выполнения лабораторной работы был создан и сконфигурирован кластер БД на выделенном узле, мы познакомились с
 различными вариантами конфигурации. Также была создана БД, новая роль, табличные пространства и заполнение тестовыми
